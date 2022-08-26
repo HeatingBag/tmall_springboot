@@ -1,0 +1,31 @@
+/**
+ * @Title: SpringContextUtil
+ * @Auther: zhang
+ * @Version: 1.0
+ * @create: 2022/6/19 16:48
+ */
+package com.how2java.tmall.util;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SpringContextUtil implements ApplicationContextAware {
+
+    private SpringContextUtil() {
+
+    }
+
+    private static ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        SpringContextUtil.applicationContext = applicationContext;
+    }
+
+    public static <T> T getBean(Class<T> clazz) {
+        return applicationContext.getBean(clazz);
+    }
+
+}

@@ -1,0 +1,121 @@
+<div th:fragment="html" xmlns:th="http://www.thymeleaf.org">
+
+    <!--    1. 首先加载Vue-->
+    <!--    2. Vue加载成功之后调用 header.html 的 linkDefaultActions 函数，给一些特定超链加上事件。-->
+    <!--    function linkDefaultActions() {...}-->
+    <!--    3. 然后调用load函数  load: function () {}-->
+    <!--    4. 在load函数中访问 forehome     var url = this.uri->forehome; -->
+    <!--    5. forehome 在ForeRESTController 中定义，其作用：-->
+    <!--    5.1. 查询所有分类-->
+    <!--    5.2. 为这些分类填充产品集合-->
+    <!--    5.3. 为这些分类填充推荐产品集合-->
+    <!--    5.4. 移除产品里的分类信息，以免出现重复递归-->
+    <!--    5.5. 返回这个 categoreis集合(cs)，随即被转换为 json 数组-->
+    <!--    6. vue 拿到这个json数组，把他放在 vue.categories属性上-->
+    <!--    7. vue 就会通过本教程下面几个被包含的 html 中的代码， 把这些数据渲染在视图上-->
+    <!--    8. 然后， 在vue.$nextTick 这个函数里，对那渲染出来的元素，加上监听。-->
+    <!--    vue.$nextTick 的意思是表示渲染结束后，会被调用，相当于回调函数的概念。为什么要这么做呢？ 因为要等渲染结束之后，才来进行监听，否则他们都没有被创建出来，监听也没有意义呀。-->
+    <!--    9. 加监听的函数叫做：homePageRegisterListeners().-->
+
+    <script>
+        function showProductsAsideCategorys(cid) {
+            $("div.eachCategory[cid=" + cid + "]").css("background-color", "white");
+            $("div.eachCategory[cid=" + cid + "] a").css("color", "#87CEFA");
+            $("div.productsAsideCategorys[cid=" + cid + "]").show();
+        }
+
+        function hideProductsAsideCategorys(cid) {
+            $("div.eachCategory[cid=" + cid + "]").css("background-color", "#e2e2e3");
+            $("div.eachCategory[cid=" + cid + "] a").css("color", "#000");
+            $("div.productsAsideCategorys[cid=" + cid + "]").hide();
+        }
+
+        function homePageRegisterListeners() {
+            $("div.eachCategory").mouseenter(function () {
+                var cid = $(this).attr("cid");
+                showProductsAsideCategorys(cid);
+            });
+            $("div.eachCategory").mouseleave(function () {
+                var cid = $(this).attr("cid");
+                hideProductsAsideCategorys(cid);
+            });
+            $("div.productsAsideCategorys").mouseenter(function () {
+                var cid = $(this).attr("cid");
+                showProductsAsideCategorys(cid);
+            });
+            $("div.productsAsideCategorys").mouseleave(function () {
+                var cid = $(this).attr("cid");
+                hideProductsAsideCategorys(cid);
+            });
+
+            $("div.rightMenu span").mouseenter(function () {
+                var left = $(this).position().left;
+                var top = $(this).position().top;
+                var width = $(this).css("width");
+                var destLeft = parseInt(left) + parseInt(width) / 2;
+                $("img#catear").css("left", destLeft);
+                $("img#catear").css("top", top - 20);
+                $("img#catear").fadeIn(500);
+
+            });
+            $("div.rightMenu span").mouseleave(function () {
+                $("img#catear").hide();
+            });
+
+            var left = $("div#carousel-of-product").offset().left;
+            $("div.categoryMenu").css("left", left - 20);
+            $("div.categoryWithCarousel div.head").css("margin-left", left);
+            $("div.productsAsideCategorys").css("left", left - 20);
+
+            $("div.productsAsideCategorys div.row a").each(function () {
+                var v = Math.round(Math.random() * 6);
+                if (v == 1)
+                    $(this).css("color", "#87CEFA");
+            });
+        }
+
+        $(function () {
+
+            var data4Vue = {
+                uri: 'forehome',
+                categories: []
+            };
+            //ViewModel
+            var vue = new Vue({
+                el: '#workingArea',
+                data: data4Vue,
+                mounted: function () { //mounted　表示这个 Vue 对象加载成功了
+                    linkDefaultActions();
+                    this.load();
+                },
+                methods: {
+                    load: function () {
+                        var url = this.uri;
+                        axios.get(url).then(function (response) {
+                            vue.categories = response.data;
+                            vue.$nextTick(function () {
+                                //要等渲染结束之后，才来进行监听，否则他们都没有被创建出来，监听也没有意义呀
+                                homePageRegisterListeners();
+                            })
+                        });
+                    }
+                },
+                filters: {
+                    subTitleFilter: function (value) {
+                        if (!value) return ''; //如果为空，则返回空字符串
+                        return value.split(" ")[0]; //根据空格拆分，并且只获取数组第一个值
+                    }
+                }
+            });
+
+        });
+
+    </script>
+
+    <title>模仿天猫官网</title>
+    <div class="homepageDiv">
+        <div th:replace="include/fore/home/categoryAndcarousel::html"></div>
+        <div th:replace="include/fore/home/homepageCategoryProducts::html"></div>
+    </div>
+</div>
+

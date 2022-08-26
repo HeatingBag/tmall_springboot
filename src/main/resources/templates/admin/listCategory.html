@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--listCategory.html 两件事： 获取数据 和 展示数据-->
+<head th:include="include/admin/adminHeader::html('分类管理')"></head>
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+<script>
+
+    // 1. 获取数据
+    // $(function(){} : 这个是jquery的代码，表示当整个html加载好了之后执行
+    // var data4Vue = {...} vue用到的数据， uri表示访问哪个地址去获取数据，
+    // 这里的值是 categories，和 CategoryController.java  @GetMapping("/categories")相呼应
+    // beans: []为返回的数据
+    // bean:存放分类信息(双向绑定分类信息)
+    // file:表示上传的文件。
+
+    $(function () {
+        var data4Vue = {
+            uri: 'categories',
+            pagination: {},
+            beans: [],
+            bean: {id: 0, name: ''},
+            file: null
+        };
+
+        //ViewModel
+        //创建Vue对象，el 表示和本页面的 <div id="workingArea" > 元素绑定，
+        // data 表示vue 使用上面的data4Vue对象,使用从data4Vue里取出的数据。
+        var vue = new Vue({
+            el: '#workingArea',
+            data: data4Vue,
+
+            //加载Vue对象成功之后会调用，成功的时候去调用 list() 函数，list: function () {...}。
+            //mounted　表示这个 Vue 对象加载成功了
+            mounted: function () {
+                this.list(0);
+            },
+            //list 函数使用 data4Vue里的 uri作为地址，然后调用 axios.js 这个 ajax库，进行异步调用。
+            // var url = this.uri;表示访问  uri: 'categories',把值赋给url这个局部变量，再通过axios.get(url)去获取数据
+            //拿到数据后再返回出来，就放在 vue.beans = response.data;这个beans上，也就是var data4Vue = {.. beans: []}这个beans
+
+            //分页:
+            // 1. list方法带上了参数 start
+            // 2. 通过 categories 获取数据的时候，带上了这个参数
+            // 3. 获取到的参数，以前是 json 化后的 category数组，现在是 Page4Navigator<Category>对象，对应的就是pagination；
+            // 而数据，vue.beans对应的是 就是那5条数据。
+            methods: {
+                list: function (start) {
+                    var url = this.uri + "?start=" + start;
+                    axios.get(url).then(function (response) {
+                        vue.pagination = response.data;
+                        vue.beans = response.data.content;
+                    });
+                },
+
+                // 提供add函数，add函数做了如下事情:
+                // 1.首先判断分类名是否为空。 这个checkEmpty函数在adminHeader.html 中定义
+                // 2.判断分类图片是否为空
+                // 3.采用axios 上传图片。 axios 上传图片比较奇怪，需要用如代码所示的 formData的形式来做，否则没法上传。
+                // 4.调用 axios 的post方法进行实际的上传工作。
+                // 5 上传成功后， 调用 vue.list(0) 重新查询第一页的数据。 然后还原数据，如： vue.bean, vue.file,
+                //   还有上传控件里面的值。使得输入部分回到上传前的状态。
+                add: function () {
+                    if (!checkEmpty(this.bean.name, "分类名称"))
+                        return;
+                    if (!checkEmpty(this.file, "分类图片"))
+                        return;
+
+                    var url = this.uri;//此处的this.uri就指的是  uri: 'categories',
+
+                    //axios.js 上传文件要用 formData 这种方式
+                    var formData = new FormData();
+                    formData.append("image", this.file);
+                    formData.append("name", this.bean.name);
+                    axios.post(url, formData).then(function (response) {
+                        vue.list(0);
+                        vue.bean = {id: 0, name: ''};
+                        $("#categoryPic").val('');
+                        vue.file = null;
+                    });
+                },
+
+                // 1. 函数名用的 deleteBean, 而不是 delete, 因为 delete 是保留字，
+                // 2. 首先进行是否删除确认 checkDeleteLink(). 这个函数在 adminHeader.html 中定义
+                // 3. 组织url, 删除的规范是 /categoreis/123. 要这样写,对应CategoryController的  @DeleteMapping("/categories/{id}")
+                // 4. 通过axios 提交 delete 请求
+                // 5. 根据 REST 规范，当删除数据后，应该返回一个空字符串，所以会判断 0!=response.data.length
+                // 6. 当是空字符串的时候，调用 vue.list(0) 查询第一页。
+                deleteBean: function (id) {
+                    if (!checkDeleteLink())
+                        return;
+                    var url = this.uri + "/" + id;
+                    axios.delete(url).then(function (response) {
+                        if (0 != response.data.length) {
+                            alert(response.data);
+                        } else {
+                            vue.list(0);
+                        }
+                    });
+                },
+
+                //当上传控件选中某个本地文件的时候，这个文件对象就会保存在data4Vue.file 上
+                getFile: function (event) {
+                    this.file = event.target.files[0];
+                },
+
+                //和adminPage.html的   <a  href="#nowhere" @click="jump('first')">&laquo;</a> 等相关联
+                //这就是指点击图标跳转
+                jump: function (page) {
+                    jump(page, vue);
+                },
+                //和adminPage.html的  <a href="#nowhere" @click="jumpByNumber(i-1)" > 相关联
+                //这个指点击数字跳转
+                jumpByNumber: function (start) {
+                    jumpByNumber(start, vue);
+                }
+            }
+        });
+    });
+
+</script>
+<div id="workingArea">
+    <h1 class="label label-info">分类管理</h1>
+    <br>
+    <br>
+    <div class="listDataTableDiv">
+        <table class="table table-striped table-bordered table-hover  table-condensed">
+            <thead>
+            <tr class="success">
+                <th>ID</th>
+                <th>图片</th>
+                <th>分类名称</th>
+                <th>属性管理</th>
+                <th>产品管理</th>
+                <th>编辑</th>
+                <th>删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--    展示数据-->
+            <!--    使用 v-for进行遍历， 这个 beans 就表示data4Vue里面的beans属性。-->
+            <!--    bean就是遍历出来的每个id, 这里就是输出每个分类的id.-->
+            <tr v-for="bean in beans ">
+                <td>{{bean.id}}</td>
+                <td>
+                    <img height="40px" :src="'img/category/'+bean.id+'.jpg'">
+                </td>
+                <td>
+                    {{bean.name}}
+                </td>
+                <td>
+                    <a :href="'admin_property_list?cid=' + bean.id "><span
+                            class="glyphicon glyphicon-th-list"></span></a>
+                </td>
+                <td>
+                    <a :href="'admin_product_list?cid=' + bean.id "><span
+                            class="glyphicon glyphicon-shopping-cart"></span></a>
+                </td>
+                <td>
+                    <!-- 用于编辑的超链，指向地址admin_category_edit,并且会传递当前分类对象的id过去。-->
+                    <a :href="'admin_category_edit?id=' + bean.id "><span class="glyphicon glyphicon-edit"></span></a>
+                </td>
+                <td>
+                    <!--  @click="deleteBean(bean.id) 对应   deleteBean: function (id) {...}函数-->
+                    <a href="#nowhere" @click="deleteBean(bean.id)"><span
+                            class="   glyphicon glyphicon-trash"></span></a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div th:replace="include/admin/adminPage::html"></div>
+    <div class="panel panel-warning addDiv">
+        <div class="panel-heading">新增分类</div>
+        <div class="panel-body">
+            <table class="addTable">
+                <tr>
+                    <td>分类名称</td>
+                    <!--   @keyup.enter="add"指键盘回车也可以调用函数add   -->
+                    <!--   v-model.trim="bean.name"对应 add: function () {}中的  formData.append("name", this.bean.name);双向绑定-->
+                    <td><input @keyup.enter="add" v-model.trim="bean.name" type="text" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>分类图片</td>
+                    <td>
+                        <!--   @change="getFile($event)" 对应 getFile: function (event) {...}-->
+                        <input id="categoryPic" accept="image/*" type="file" name="image" @change="getFile($event)"/>
+                    </td>
+                </tr>
+                <tr class="submitTR">
+                    <td colspan="2" align="center">
+                        <!--  @click="add"对应 add: function () {...}-->
+                        <a href="#nowhere" @click="add" class="btn btn-success">提交</a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div th:replace="include/admin/adminFooter::html"></div>
+</body>
+</html>

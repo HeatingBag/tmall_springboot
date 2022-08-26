@@ -1,0 +1,36 @@
+<div class="pageDiv" th:fragment="html" xmlns:th="http://www.thymeleaf.org">
+	<nav>
+	  <ul class="pagination">
+
+<!--	这是首页，当 pagination.first 为真的时候，就表示当前是首页，那么首页对应的 li 的 class 就会是 disabled, 就点击不了。-->
+<!--		  @click="jump('first')"  点击的时候，会调用jump 函数，并且传 'first' 进去。-->
+<!--		  这个函数，先是调用 listCategory.html 里新增的 jump 函数，   jump: function (page) {...}-->
+<!--		  然后间接地调用 adminHeader.html 里的 jump(page,vue) 函数。function jump(page,vue){...}-->
+	    <li :class="{ disabled: pagination.first }">
+	      <a  href="#nowhere" @click="jump('first')">«</a>
+	    </li>
+
+	    <li :class="{ disabled: !pagination.hasPrevious }">
+	      <a  href="#nowhere" @click="jump('pre')">‹</a>
+	    </li>		    
+<!--		这个 {{i}}就是遍历的 Page4Navigator 中新增加的 navigatepageNums 数组 int[] navigatepageNums;-->
+<!--		遍历出来之后，点击超链会调用 jumpByNumber 函数，并间接地调用adminHeader.html 里的jumpByNumber 函数：-->
+<!--		function jumpByNumber(start,vue){..	vue.list(start); } 这个start就是传进去的i-->
+<!--		一旦 vue.list 根据新的 start 获取到的数据， vue.js 就会自动刷新table 里的数据了。  -->
+		<li  v-for="i in pagination.navigatepageNums">
+			<a href="#nowhere" @click="jumpByNumber(i-1)" >
+				{{i}}
+			</a>
+		</li>
+
+	    <li :class="{ disabled: !pagination.hasNext }">
+	      <a  href="#nowhere" @click="jump('next')">›</a>
+	    </li>
+
+	    <li :class="{ disabled: pagination.last }">
+	      <a  href="#nowhere" @click="jump('last')">»</a>
+	    </li>
+
+	  </ul>
+	</nav>    
+</div>

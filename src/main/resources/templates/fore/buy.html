@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--在点击立即购买之后，通过 imgAndInfo.html 的 $(".buyLink").click 函数跳转到地址：-->
+<!--location.href="buy?oiid="+oiid;-->
+<!--间接地导致 buy页面被调用-->
+
+<head th:include="include/fore/header::html"></head>
+<body>
+<div id="workingArea">
+    <div th:replace="include/fore/top::html"></div>
+    <div th:replace="include/fore/search::html"></div>
+    <div th:replace="include/fore/cart/buyPage::html"></div>
+    <div th:replace="include/fore/footer::html"></div>
+</div>
+</body>
+</html>
